@@ -1,17 +1,29 @@
 // ==UserScript==
 // @name         Smoobu Helper Script
-// @description  Smoobu Helper Script
-// @namespace    http://tampermonkey.net/
-// @version      1.0
-// @match        https://login.smoobu.com/es/cockpit
-// @match        https://login.smoobu.com/es/cockpit?dateMulti=*
+// @description  Summarizes the number of mensual check-outs per property
+// @version      2.0
+// @author       mmistika (https://github.com/mmistika)
+// @namespace    https://github.com/mmistika/smoobu-helper/
+// @supportURL   https://github.com/mmistika/smoobu-helper/issues
+// @match        https://login.smoobu.com/*/cockpit/calendar*
+// @license      MIT
 // @grant        none
+// @run-at       document-end
+// @icon         https://cdn.brandfetch.io/idkPuacoqc/w/518/h/518/theme/dark/icon.jpeg?c=1dxbfHSJFAPEGdCLU4o5B
 // ==/UserScript==
 
-(function() {
+(function () {
     'use strict';
+    const langMatch = location.pathname.match(/^\/([a-z]{2})\//);
+    const lang = langMatch ? langMatch[1] : 'en';
 
-    function observePageChange(callback) {
+    const pageURL = `https://login.smoobu.com/${lang}/cockpit/calendar`;
+
+    const buttonGroupXPath = '//*[@id="root"]/div/div[1]/div[2]';
+    const filterBtnCaptionXPath = '//*[@id="root"]/div/div[1]/div[2]/button[2]/span[2]';
+    const monthSelectXPath = '//*[@id="menu-button-:r0:"]/div/text()';
+
+    function observeUrlChange(callback) {
         let lastUrl = location.href;
         const observer = new MutationObserver(() => {
             if (location.href !== lastUrl) {
@@ -22,9 +34,18 @@
         observer.observe(document, { childList: true, subtree: true });
     }
 
-    function waitForElement(selector, callback) {
+    function getElementByXPath(xpath) {
+        return document.evaluate(xpath,
+            document,
+            null,
+            XPathResult.FIRST_ORDERED_NODE_TYPE,
+            null)
+            .singleNodeValue;
+    }
+
+    function waitForElement(xpath, callback) {
         const observer = new MutationObserver(() => {
-            const element = document.querySelector(selector);
+            const element = getElementByXPath(xpath);
             if (element) {
                 observer.disconnect();
                 callback(element);
@@ -33,132 +54,186 @@
         observer.observe(document.body, { childList: true, subtree: true });
     }
 
-    function injectButton(container, buttonHTML, onClickHandler) {
-        const div = document.createElement('div');
-        div.innerHTML = buttonHTML;
-        const button = div.firstChild;
-        button.addEventListener('click', onClickHandler);
-        container.appendChild(button);
-        container.classList.add('row');
-    }
+    function insertButton(targetParent, caption, callback) {
+        const button = document.createElement('button');
+        button.innerHTML = `<span>${caption}</span>`;
 
-    function handlePage1() {
-        waitForElement('#multi-calendar > div > div.card-header > div > div:last-child', (targetContainer) => {
-            const buttonHTML = `<div class="text-left text-sm-right pl-1"><button id="dLabel" type="button" data-offset="" aria-expanded="false" class="btn btn-secondary btn btn-small"><span>Open normalized</span></button></div>`;
+        // Button styles
+        const existingButton = targetParent.querySelector('button:last-child');
+        button.className = [...existingButton.classList].at(-1);
 
-            injectButton(targetContainer, buttonHTML, () => {
-                const selectBox = targetContainer.querySelector('select');
-                const selectedOption = selectBox?.querySelector('option[selected]');
-                if (selectedOption) {
-                    const monthValue = selectedOption.value;
-                    window.location.href = `https://login.smoobu.com/es/cockpit?dateMulti=${monthValue}`;
-                }
-            });
-        });
-    }
+        // Caption styles
+        const existingCaption = existingButton.querySelector('span:nth-child(2)');
+        button.querySelector('span').classList = [...existingCaption.classList].at(-1);
 
-    function handlePage2() {
-        waitForElement('#multi-calendar > div > div.card-header > div > div:last-child', (targetContainer) => {
-            const buttonHTML = `<div class="text-left text-sm-right pl-1"><button id="dLabel" type="button" data-offset="" aria-expanded="false" class="btn btn-secondary btn btn-small"><span>Count check-outs</span></button></div>`;
-
-            injectButton(targetContainer, buttonHTML, () => {
-                const tableRows = document.querySelectorAll('#multipleCalendarTable > tbody > tr');
-                const results = {};
-
-                tableRows.forEach(row => {
-                    const cells = row.querySelectorAll('td');
-                    if (cells.length < 2) return;
-
-                    const apartmentName = cells[0].getAttribute('title');
-                    if (!apartmentName) return;
-
-                    let count = 0;
-                    let date='';
-                    for (let i = 1; i < cells.length; i++) {
-                        let cellDate = cells[i].getAttribute('data-date').slice(0, 7);
-                        if (date === '') date = cellDate;
-                        if (date != cellDate) break;
-                        if (cells[i].hasAttribute('data-booking-end')) {
-                            const polygon = cells[i].querySelector('svg polygon');
-                            if (polygon) {
-                                const color = polygon.getAttribute('fill');
-                                if (color === '#7C7C7C') continue;
-                            }
-                            count++;
-                        }
-                    }
-                    results[apartmentName] = count;
-                });
-
-                showResultsPopup(results);
-            });
-        });
-    }
-
-    function showResultsPopup(data) {
-        const overlay = document.createElement('div');
-        overlay.style.position = 'fixed';
-        overlay.style.top = '0';
-        overlay.style.left = '0';
-        overlay.style.width = '100%';
-        overlay.style.height = '100%';
-        overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-        overlay.style.zIndex = '9999';
-
-        const popup = document.createElement('div');
-        popup.style.position = 'fixed';
-        popup.style.top = '50%';
-        popup.style.left = '50%';
-        popup.style.transform = 'translate(-50%, -50%)';
-        popup.style.backgroundColor = 'white';
-        popup.style.padding = '20px';
-        popup.style.border = '1px solid black';
-        popup.style.zIndex = '10000';
-        popup.style.maxHeight = '80%';
-        popup.style.overflowY = 'auto';
-
-        const closeButton = document.createElement('button');
-        closeButton.textContent = 'Close';
-        closeButton.style.marginBottom = '10px';
-        closeButton.addEventListener('click', () => {
-            popup.remove();
-            overlay.remove();
-        });
-
-        const table = document.createElement('table');
-        table.style.width = '100%';
-        table.style.borderCollapse = 'collapse';
-
-        const headerRow = document.createElement('tr');
-        headerRow.innerHTML = `<th style="border: 1px solid black; padding: 5px;">Apartment</th><th style="border: 1px solid black; padding: 5px;">Mensual check-outs</th>`;
-        table.appendChild(headerRow);
-
-        for (const [apartment, count] of Object.entries(data)) {
-            const row = document.createElement('tr');
-            row.innerHTML = `<td style="border: 1px solid black; padding: 5px;">${apartment}</td><td style="border: 1px solid black; padding: 5px;">${count}</td>`;
-            table.appendChild(row);
-        }
-
-        popup.appendChild(closeButton);
-        popup.appendChild(table);
-
-        document.body.appendChild(overlay);
-        document.body.appendChild(popup);
+        button.addEventListener('click', callback);
+        targetParent.appendChild(button);
     }
 
     function start() {
-        const isPage1 = location.href === 'https://login.smoobu.com/es/cockpit';
-        const isPage2 = location.href.startsWith('https://login.smoobu.com/es/cockpit?dateMulti=');
+        waitForElement(filterBtnCaptionXPath, () => {
+            const buttonGroup = getElementByXPath(buttonGroupXPath);
+            if (!buttonGroup) return;
 
-        if (isPage1) {
-            handlePage1();
-        } else if (isPage2) {
-            handlePage2();
+            insertButton(buttonGroup, 'Count check-outs', () => {
+                const message = 'Failed to count or no check-outs!'
+
+                const checkOutCounts = countCheckOuts();
+                if (!checkOutCounts) {
+                    showResultTable(null, message);
+                    return;
+                }
+
+                const ordered = Object.keys(checkOutCounts).sort().reduce(
+                    (obj, key) => {
+                        obj[key] = checkOutCounts[key];
+                        return obj;
+                    },
+                    {}
+                );
+
+                if (Object.keys(ordered).length === 0) {
+                    showResultTable(null, message);
+                    return;
+                }
+
+                showResultTable(ordered)
+            });
+        });
+    }
+
+    async function fetchJson(url) {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+            return await response.json();
+        } catch (error) {
+            console.error("Error fetching data:", error);
+            return null;
         }
     }
 
+    async function fetchProperties(userId) {
+        const propertiesUrl = `https://login.smoobu.com/api/v2/users/${userId}/properties?sort=sortingPosition%2Cname`;
+        const propertiesData = await fetchJson(propertiesUrl);
+
+        if (!propertiesData || !propertiesData.data) return null;
+
+        return propertiesData.data.reduce((map, prop) => {
+            map[prop.id] = prop.attributes?.name;
+            return map;
+        }, {});
+    }
+
+    async function fetchAllBookings(userId, from, to) {
+        let allBookings = [];
+        let page = 1;
+        let totalPages = 1;
+
+        do {
+            const bookingsUrl = `https://login.smoobu.com/api/v1/users/${userId}/bookings?page%5Bsize%5D=25&page%5Bnumber%5D=${page}&filter%5Bfrom%5D=${from}&filter%5Bto%5D=${to}`;
+            const data = await fetchJson(bookingsUrl);
+
+            if (data && data.data) {
+                allBookings = allBookings.concat(data.data);
+                totalPages = data.meta?.totalPages || 1;
+            } else {
+                console.error("No booking data received.");
+                return null;
+            }
+
+            ++page;
+        } while (page <= totalPages);
+
+        return allBookings;
+    }
+
+    function getUserId() {
+        const sessionData = localStorage.getItem("userpilot:session_id");
+        if (!sessionData) {
+            console.error('userpilot:session_id not found')
+            return null;
+        }
+
+        try {
+            const parsedData = JSON.parse(sessionData);
+            return Object.keys(parsedData)[0];
+        } catch (error) {
+            return null;
+        }
+    }
+
+    async function countCheckOuts() {
+        const userId = getUserId();
+        if (!userId) {
+            console.error("Failed to parse user session data");
+            return null;
+        }
+
+        const properties = await fetchProperties(userId);
+        if (!properties || Object.keys(properties).length === 0) {
+            console.error("No properties found.");
+            return null;
+        }
+
+        const { from, to } = getTimePeriod();
+        if (!from || !to) {
+            console.error('Failed to parse selected time period');
+            return null;
+        }
+
+        const bookings = await fetchAllBookings(userId, from, to);
+        if (!bookings || Object.keys(bookings).length === 0) {
+            console.error("No bookings found.");
+            return null;
+        }
+
+        // Init counters for each property
+        const checkOutCounts = {};
+        for (const [id, name] of Object.entries(properties)) {
+            checkOutCounts[name] = 0;
+        }
+
+        // Process bookings
+        for (const booking of bookings) {
+            const departureDate = booking.attributes?.departureDate;
+            const guestName = booking.attributes?.guestName;
+            const propertyId = booking.relationships?.property?.data?.id;
+
+            if (departureDate && propertyId && properties[propertyId]) {
+                const departure = departureDate.split("T")[0];;
+
+                if (from <= departure && departure <= to && guestName) {
+                    ++checkOutCounts[properties[propertyId]];
+                }
+            } else {
+                console.error('Failed to process booking:', booking);
+                return null;
+            }
+        }
+
+        return checkOutCounts;
+    }
+
+    function getTimePeriod() {
+        const text = getElementByXPath(monthSelectXPath);
+        if (!text) return { from: null, to: null };
+
+        const [monthName, yearStr] = text.textContent.trim().split(" ");
+        const month = new Date(Date.parse(monthName + " 1")).getMonth() + 1;
+        const year = parseInt(yearStr);
+
+        if (isNaN(month) || isNaN(year)) return { from: null, to: null };
+
+        const from = `${year}-${String(month).padStart(2, "0")}-01`;
+        const lastDay = new Date(year, month, 0).getDate();
+        const to = `${year}-${String(month).padStart(2, "0")}-${lastDay}`;
+
+        return { from, to };
+    }
+
     window.addEventListener('load', function () {
-        observePageChange(start);
+        observeUrlChange(start);
         start();
     })
 
