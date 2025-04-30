@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Smoobu Helper Script
 // @description  Summarizes the number of monthly check-outs per property
-// @version      2.1
+// @version      2.2
 // @author       mmistika (https://github.com/mmistika)
 // @namespace    https://github.com/mmistika/smoobu-helper/
 // @supportURL   https://github.com/mmistika/smoobu-helper/issues
@@ -199,8 +199,82 @@
     }
 
     /**
-     * Gets time period (month) from UI
-     */
+    * Converts localized month name to its number
+    */
+    function getMonthNumber(monthName) {
+        const normalize = (str) =>
+        str
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+
+        const supportedLocales = {
+            en: "en-US", // English
+            de: "de-DE", // German
+            it: "it-IT", // Italian
+            fr: "fr-FR", // French
+            es: "es-ES", // Spanish
+            nl: "nl-NL", // Dutch
+            el: "el-GR", // Greek
+            pt: "pt-PT", // Portuguese
+            ru: "ru-RU", // Russian
+            pl: "pl-PL", // Polish
+        };
+
+        if (!supportedLocales[lang]) {
+            console.error(
+                `Unsupported locale: ${lang}. Supported: ${Object.keys(supportedLocales).join(", ")}`
+            );
+            return 0;
+        }
+
+        // Greek month names in nominative
+        const greekNominativeMonths = [
+            { nominative: "Ιανουάριος", number: 1 },
+            { nominative: "Φεβρουάριος", number: 2 },
+            { nominative: "Μάρτιος", number: 3 },
+            { nominative: "Απρίλιος", number: 4 },
+            { nominative: "Μάιος", number: 5 },
+            { nominative: "Ιούνιος", number: 6 },
+            { nominative: "Ιούλιος", number: 7 },
+            { nominative: "Αύγουστος", number: 8 },
+            { nominative: "Σεπτέμβριος", number: 9 },
+            { nominative: "Οκτώβριος", number: 10 },
+            { nominative: "Νοέμβριος", number: 11 },
+            { nominative: "Δεκέμβριος", number: 12 },
+        ];
+
+        const monthMap = new Map();
+        const formatter = new Intl.DateTimeFormat(supportedLocales[lang], {
+            month: "long",
+        });
+
+        for (let month = 0; month < 12; month++) {
+            const date = new Date(2023, month, 1);
+            const monthNameFormatted = formatter.format(date);
+            monthMap.set(normalize(monthNameFormatted), month + 1);
+
+            // For Greek, also map the nominative form
+            if (lang === "el") {
+                const greekMonth = greekNominativeMonths[month];
+                monthMap.set(normalize(greekMonth.nominative), month + 1);
+            }
+        }
+
+        // Normalize input month name and find match
+        const normalizedMonthName = normalize(monthName);
+        for (const [key, value] of monthMap) {
+            if (key === normalizedMonthName) {
+                return value;
+            }
+        }
+
+        return 0;
+    }
+
+    /**
+ * Gets time period (month) from UI
+ */
     function getTimePeriod() {
         const text = getElementByXPath(monthSelectXPath);
         if (!text || !text.textContent) {
@@ -210,15 +284,10 @@
         const [monthName, yearStr] = text.textContent.trim().split(" ");
 
         // Parse month name to number
-        const monthDate = new Date(Date.parse(monthName + " 1"));
-        if (isNaN(monthDate.getTime())) {
-            return { from: null, to: null };
-        }
-
-        const month = monthDate.getMonth() + 1;
+        const month = getMonthNumber(monthName);
         const year = parseInt(yearStr);
 
-        if (isNaN(month) || isNaN(year)) {
+        if (month < 1 || isNaN(year)) {
             return { from: null, to: null };
         }
 
