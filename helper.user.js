@@ -96,14 +96,14 @@
         button.innerHTML = `<span>${caption}</span>`;
 
         // Copy styles from existing button
-        const existingButton = targetParent.querySelector('button:last-child');
+        const existingButton = targetParent.querySelector('button:first-child');
         if (existingButton) {
-            button.className = [...existingButton.classList].at(-1);
+            button.className = existingButton.className;
 
             // Copy caption styles
-            const existingCaption = existingButton.querySelector('span:nth-child(2)');
+            const existingCaption = targetParent.querySelector('div > button > span:first-child');
             if (existingCaption) {
-                button.querySelector('span').className = [...existingCaption.classList].at(-1);
+                button.querySelector('span').className = existingCaption.className;
             }
         }
 
