@@ -5,9 +5,8 @@ A browser userscript that adds a "Count check-outs" button to Smoobu's calendar 
 # Installation
 
 1. Install a userscript manager extension like [Tampermonkey](https://www.tampermonkey.net/) in your browser
-2. Click on the extension icon and select "Create a new script" or "Add new script"
-3. Copy and paste the entire script code
-4. Save the script
+
+2. [![Button Icon](https://img.shields.io/badge/Click%20to%20install%20Smoobu%20Helper-3944BC?style=flat&logoColor=white&logo=Files)](https://github.com/mmistika/smoobu-helper/raw/refs/heads/main/helper.user.js)
 
 # Usage
 
