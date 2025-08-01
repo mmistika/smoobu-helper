@@ -21,7 +21,7 @@
 
     // XPath selectors
     const buttonGroupXPath = '//*[@id="root"]/div/div[1]/div[2]';
-    const filterBtnCaptionXPath = '//*[@id="root"]/div/div[1]/div[2]/button[2]/span[2]';
+    const filterBtnCaptionXPath = '//*[@id="root"]/div/div[1]/div[2]/div/button/span[2]';
     const monthSelectXPath = '//*[@id="menu-button-:r0:"]/div/span';
 
     // Variables for UI elements
