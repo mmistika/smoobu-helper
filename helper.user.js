@@ -62,7 +62,7 @@
     /**
      * Waits for element to appear in DOM
      */
-    function waitForElement(xpath, callback) {
+    function waitForElement(xpath, callback, timeout) {
         // Check if element already exists
         const element = getElementByXPath(xpath);
         if (element) {
@@ -73,11 +73,17 @@
         const observer = new MutationObserver(() => {
             const element = getElementByXPath(xpath);
             if (element) {
+                clearTimeout(timer);
                 observer.disconnect();
                 callback(element);
             }
         });
         observer.observe(document.body, { childList: true, subtree: true });
+
+        const timer = setTimeout(() => {
+            observer.disconnect();
+            console.error("Timed out waiting for element with XPath: ", xpath);
+        }, timeout);
     }
 
     /**
@@ -499,7 +505,7 @@
                     showResultTable(null, failMessage);
                 }
             });
-        });
+        }, 8000);
     }
 
     // Initialize script
