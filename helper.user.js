@@ -5,6 +5,8 @@
 // @author       mmistika (https://github.com/mmistika)
 // @namespace    https://github.com/mmistika/smoobu-helper/
 // @supportURL   https://github.com/mmistika/smoobu-helper/issues
+// @downloadURL  https://github.com/mmistika/smoobu-helper/raw/refs/heads/main/helper.user.js
+// @updateURL    https://github.com/mmistika/smoobu-helper/raw/refs/heads/main/helper.user.js
 // @match        https://login.smoobu.com/*/cockpit/calendar*
 // @license      MIT
 // @grant        none
