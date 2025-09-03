@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Smoobu Helper Script
 // @description  Summarizes the number of monthly check-outs per property
-// @version      2.4
+// @version      2.5
 // @author       mmistika (https://github.com/mmistika)
 // @namespace    https://github.com/mmistika/smoobu-helper/
 // @supportURL   https://github.com/mmistika/smoobu-helper/issues
@@ -23,7 +23,7 @@
 
     // XPath selectors
     const buttonGroupXPath = '//*[@id="root"]/div/div[1]/div[2]';
-    const filterBtnCaptionXPath = '//*[@id="root"]/div/div[1]/div[2]/div/button/span[2]';
+    const filterBtnCaptionXPath = '//*[@id="root"]/div/div[1]/div[2]/div/div/button/span[1]';
     const monthSelectXPath = '//*[@id="menu-button-:r0:"]/div/span';
 
     // Variables for UI elements
