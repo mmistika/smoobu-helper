@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Smoobu Helper Script
 // @description  Summarizes the number of monthly check-outs per property
-// @version      2.5
+// @version      2.6
 // @author       mmistika (https://github.com/mmistika)
 // @namespace    https://github.com/mmistika/smoobu-helper/
 // @supportURL   https://github.com/mmistika/smoobu-helper/issues
