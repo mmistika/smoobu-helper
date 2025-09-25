@@ -24,7 +24,7 @@
     // XPath selectors
     const buttonGroupXPath = '//*[@id="root"]/div/div[1]/div[2]';
     const filterBtnCaptionXPath = '//*[@id="root"]/div/div[1]/div[2]/div/div/button/span[1]';
-    const monthSelectXPath = '//*[@id="menu-button-:r0:"]/div/span';
+    const monthSelectXPath = '//*[@id="menu-button-:r2:"]/div/span';
 
     // Variables for UI elements
     let overlay = null;
